@@ -1,0 +1,4 @@
+interface:
+  display_name: "Microsoft Project 2019"
+  short_description: "Crea cronogramas, tablas y capturas con Project"
+  default_prompt: "Usa $project2019-automation para crear o editar una copia de mi proyecto, verificarla y guardar una captura."

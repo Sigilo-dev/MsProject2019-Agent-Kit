@@ -1,0 +1,11 @@
+# User documents, screenshots and machine-specific reports
+/runs/
+/work/
+*.mpp
+*.mpt
+*.log
+*.zip
+Thumbs.db
+Desktop.ini
+__pycache__/
+*.pyc

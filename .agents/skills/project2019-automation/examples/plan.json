@@ -1,0 +1,8 @@
+{
+  "startDate": "2026-10-12T08:00:00",
+  "tasks": [
+    {"key": "prepare", "name": "Preparacion", "durationMinutes": 480},
+    {"key": "execute", "name": "Ejecucion", "durationMinutes": 960, "predecessorKeys": ["prepare"]},
+    {"key": "review", "name": "Revision", "durationMinutes": 480, "predecessorKeys": ["execute"]}
+  ]
+}
