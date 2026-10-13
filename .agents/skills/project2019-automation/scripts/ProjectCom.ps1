@@ -13,7 +13,7 @@ function Invoke-ProjectMethod {
     $value = $Target.GetType().InvokeMember($Name, $flags, $null, $Target, $Arguments)
     return ,$value
 }
-function Get-ProjectSnapshot {
+function Get-ProjectSnapshotCom {
     param([object]$Project)
     $tasks = Get-ProjectProperty $Project 'Tasks'
     $count = [int](Get-ProjectProperty $tasks 'Count')
@@ -48,3 +48,5 @@ function Get-ProjectSnapshot {
         Tasks=@($rows)
     }
 }
+
+. "$PSScriptRoot\ProjectSnapshot.ps1"

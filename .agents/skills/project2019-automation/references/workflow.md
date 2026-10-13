@@ -20,6 +20,12 @@ Los helpers `Get-ProjectProperty`, `Set-ProjectProperty` e `Invoke-ProjectMethod
 
 ## Crear
 
+La ruta predeterminada es **`Create -CreationMode Xml`**: valida el JSON, escribe un XML de intercambio, lo importa como proyecto nuevo (`Merge=0`), calcula solo ese proyecto y guarda el MPP. Después lo cierra, reabre en lectura y verifica los datos una vez. No crea las tareas enviando una operación COM por cada celda.
+
+El XML define una jornada de lunes a viernes, 08:00–12:00 y 13:00–17:00, sin feriados. `ProjectXml.ps1` escribe duración total, real y restante, y las dependencias por UID. Omitir duración restante hizo que Project recalculara duraciones a cero en una prueba: no simplifiques esos elementos. Escapa nombres mediante `XmlWriter`, no concatenando XML. Para otros calendarios, recursos o asignaciones, adapta y prueba el XML antes de usarlo; la ruta rápida no amplía por sí misma el esquema de entrada admitido.
+
+Si necesitas conservar el procedimiento anterior, especifica **`-CreationMode Com`**. Sus pasos son:
+
 1. Validar rutas y plan antes de conectar/mutar.
 2. Conservar referencia y snapshot del documento original.
 3. Crear un proyecto nuevo mediante `Projects.Add`.
@@ -30,6 +36,12 @@ Los helpers `Get-ProjectProperty`, `Set-ProjectProperty` e `Invoke-ProjectMethod
 8. Comparar campos persistidos, cerrar la vista de verificación y restaurar el documento anterior.
 
 Los scripts no crean un proyecto a partir del documento activo: el activo solo se conserva. Si necesitas una plantilla, calendario distinto o configuración específica, incorpora ese requisito mediante una adaptación probada sobre una copia.
+
+## Validar en bloque
+
+`Get-ProjectSnapshot` exporta el documento activo a XML nativo con `FileSaveAs`, `FormatID=MSProject.XML` y `Filtered=false`. Lo analiza localmente, comprueba que nombre y estado guardado no cambiaron, y elimina solo su archivo intermedio de nombre único en `work/project-snapshots/`. No sobrescribe el MPP. Esta lectura evita miles de llamadas COM de propiedades; la alternativa `Get-ProjectSnapshotCom` se conserva para diagnóstico, no para el recorrido rutinario.
+
+El snapshot incluye los campos previos, vínculos estructurados y el indicador `Critical` calculado por Project. Los textos de predecesoras se normalizan con ID y, cuando corresponde, tipo FS/SS/FF/SF y demora en minutos; no son una copia literal localizada de la celda. Los recursos, costes y calendarios completos siguen fuera del contrato de comparación. Si el archivo cambió después del último reporte, genera uno nuevo; si no cambió, reutiliza el existente.
 
 ## Modificar
 
@@ -94,3 +106,4 @@ Las liberaciones de referencias COM no cierran Project. No uses `FinalReleaseCom
 - [FileSaveAs](https://learn.microsoft.com/en-us/office/vba/api/project.application.filesaveas), [FileOpenEx](https://learn.microsoft.com/en-us/office/vba/api/project.application.fileopenex) y [FileCloseEx](https://learn.microsoft.com/en-us/office/vba/api/project.application.filecloseex).
 - [Type.InvokeMember](https://learn.microsoft.com/en-us/dotnet/api/system.type.invokemember?view=netframework-4.8.1).
 - [Project.HoursPerDay](https://learn.microsoft.com/en-us/office/vba/api/project.project.hoursperday), [Task.ConstraintType](https://learn.microsoft.com/en-us/office/vba/api/project.task.constrainttype), [Task.ConstraintDate](https://learn.microsoft.com/en-us/office/vba/api/project.task.constraintdate) y [Task.Milestone](https://learn.microsoft.com/en-us/office/vba/api/project.task.milestone).
+- [Estructura XML de tareas](https://learn.microsoft.com/en-us/office-project/xml-data-interchange/task-elements-and-xml-structure?view=project-client-2016) y [elemento Project](https://learn.microsoft.com/en-us/office-project/xml-data-interchange/project-element?view=project-client-2016).

@@ -1,19 +1,19 @@
 ---
 name: project2019-automation
-description: Crea y modifica cronogramas .mpp en Microsoft Project 2019 de escritorio, exporta tablas y guarda capturas reales en Windows. Usa COM y copias verificadas; para esta aplicación, no para Project web, Planner ni ProjectLibre.
+description: Crea y modifica cronogramas .mpp en Microsoft Project 2019 de escritorio, exporta tablas y genera imágenes completas de tabla y Gantt mediante GIF/PNG nativo. Usa XML, COM y copias verificadas en Windows; no es para Project web, Planner ni ProjectLibre.
 ---
 
 # Microsoft Project 2019
 
-Automatiza datos con los scripts COM de esta carpeta. Usa la aplicación instalada para calcular y guardar. Usa Computer Use para ubicar y activar ventanas; guarda capturas PNG mediante el helper GDI cuando la sesión y sus permisos lo permitan. No asumas que un fallo del capturador implica una instalación de Project dañada.
+Usa los scripts de esta carpeta. Para crear, genera en bloque mediante XML y deja que Project calcule y guarde el MPP. La validación lee los datos con una exportación XML en bloque, evitando miles de accesos COM. Para imágenes de tabla o Gantt, usa la exportación nativa GIF → PNG; reserva Computer Use/GDI para pedidos que necesiten ver la interfaz de la aplicación.
 
 ## Ruta corta
 
 1. Localiza esta carpeta y crea una carpeta de resultados absoluta y nueva. Los scripts están en `scripts/`; no reconstruyas sus rutas desde el nombre de usuario de otra máquina.
 2. Ejecuta `Test-ProjectEnvironment.ps1` con `powershell.exe -NoProfile -NonInteractive -STA -File`. Debe haber una sola instancia de Project y un documento activo. Si no está abierto, puedes abrir la aplicación instalada dentro de la autorización del usuario; no cierres otras instancias ni descartes cambios para satisfacer el chequeo.
-3. Elige la operación en la tabla inferior. Para modificar un archivo existente, usa la secuencia `Project-View Open` de la fuente → `Inspect -ExpectedActiveProjectPath` → identifica UniqueID → `Project-View Restore` → `UpdateCopy`. La receta completa está en [workflow.md](references/workflow.md). Para uno nuevo, transforma los requisitos en el JSON de ejemplo.
+3. Elige la operación en la tabla inferior. Para modificar un archivo existente, usa la secuencia `Project-View Open` de la fuente → `Inspect -ExpectedActiveProjectPath` → identifica UniqueID → `Project-View Restore` → `UpdateCopy`. La receta completa está en [workflow.md](references/workflow.md). Para uno nuevo, usa `Create -CreationMode Xml` (predeterminado), con calendario explícito de lunes a viernes, 8 horas/día. Para otra jornada, prepara una adaptación del calendario; no apliques el estándar a ciegas.
 4. Espera a que termine la operación. Exige `Result: PASS`, valores solicitados verificados y reapertura comprobada. Si falla, lee el estado antes de volver a escribir; no lances el mismo comando en bucle.
-5. Para entregar tablas, exporta el reporte verificado. Para entregar imágenes, abre el resultado, activa su ventana, captura y revisa el PNG. Restaura el documento previo con el diario de vista.
+5. Para tablas CSV/Markdown, reutiliza el reporte verificado; no repitas `Inspect` si nada cambió. Para imágenes completas, ejecuta `Export-ProjectImage.ps1` y revisa el PNG una vez. No abras previamente otra vista ni hagas capturas por scroll: el exporter gestiona su copia y restauración. Lee [native-images.md](references/native-images.md) para selección de filas, columnas y fechas.
 6. Entrega rutas, cambios, evidencia y límites reales. No declares «100 % compatible» a partir de una prueba de tres tareas.
 
 | Necesidad | Script o lectura |
@@ -23,7 +23,9 @@ Automatiza datos con los scripts COM de esta carpeta. Usa la aplicación instala
 | Editar nombre, duración o avance en una copia | `Project-Codex.ps1 -Action UpdateCopy` + [flujo COM](references/workflow.md) |
 | Obtener tabla CSV y Markdown | `Export-ProjectTable.ps1` + [tablas](references/tables.md) |
 | Abrir resultado para verlo y volver al anterior | `Project-View.ps1 -Action Open/Restore` |
-| Guardar captura real | [capturas](references/captures.md), luego `Guardar-Captura-Project.ps1` |
+| Imagen completa de tabla o tabla más Gantt | `Export-ProjectImage.ps1 -Mode Table/TableAndGantt` + [exportación nativa](references/native-images.md) |
+| Convertir un GIF de Project a PNG sin redimensionar | `Convert-ProjectGifToPng.ps1` |
+| Captura de la interfaz o un diálogo | [capturas](references/captures.md), luego `Guardar-Captura-Project.ps1` |
 | Resolver un error observado | [diagnóstico](references/troubleshooting.md), solo la fila relevante |
 
 ## Condiciones que no debes saltarte

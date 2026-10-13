@@ -27,6 +27,8 @@ Usa JSON UTF-8, no comandos incrustados ni datos separados por tabuladores envia
 
 Los vínculos creados son fin-comienzo y sin demora. Las tareas se crean con `Manual=false`. No uses estos campos como si fueran recursos, restricciones o fechas fijas. Una duración cero puede representar un hito; la visualización concreta la resuelve Project.
 
+`Create` usa `CreationMode=Xml` por defecto: importa las tareas en bloque con calendario explícito de lunes a viernes, 8 horas/día y sin feriados; genera un XML nuevo junto al MPP. `CreationMode=Com` usa creación por tarea y los valores predeterminados de Project. Ambas rutas conservan el mismo esquema de JSON y verificación de valores.
+
 La aplicación puede mostrar `?` si su configuración marca una duración como estimada. El snapshot comprueba los minutos y lee el indicador `Estimated`, pero los planes no cambian ese indicador explícitamente. Si es parte del requisito, añade una operación explícita y verifícala antes de anunciarla como soportada.
 
 ## Editar una copia
@@ -59,3 +61,5 @@ Modificar una duración o el avance puede recalcular fechas y valores derivados.
 `VerifiedUtc` es una marca UTC; presenta al usuario las horas en su zona cuando sea necesario. `Project.Start` es una representación local de Project y las fechas de tareas se serializan en ISO. No mezcles fechas de calendario con minutos de trabajo.
 
 La comparación persistente incluye ruta, inicio, `HoursPerDay`, su conversión `MinutesPerDayConversion`, cantidad de tareas y campos de las filas: ID, UniqueID, nombre, duración, predecesoras, UniqueID de predecesoras, avance, programación manual, inicio, fin, resumen, hito, tipo/fecha de restricción y duración estimada. Excluye `Name` del proyecto y `Saved`, que cambiaron como metadatos de sesión al reabrir en la prueba.
+
+La lectura en bloque añade `Dependencies` (UniqueID, Type y LagTenthsOfMinute) y `Critical`, que también se comparan al reabrir. `Predecessors` es texto normalizado: IDs separados por coma; los vínculos distintos de FS sin demora añaden su tipo y demora en minutos. Las fechas ausentes se representan como `NA`. `TaskCount` cuenta tareas no nulas y excluye el resumen de proyecto UID 0.

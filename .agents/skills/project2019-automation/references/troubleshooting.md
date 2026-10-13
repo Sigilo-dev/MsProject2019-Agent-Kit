@@ -16,6 +16,11 @@
 | `Saved=false` al reabrir el resultado en lectura | Fue observado; el verificador compara los campos persistidos y excluye ese indicador de sesión |
 | Salida/reporte existente | Usar una ruta nueva, no `-Force`, borrados o sobrescrituras automáticas |
 | Valores o snapshot no coinciden | Conservar evidencia, revisar calendario/modo/IDs. No ignorar la comparación para obtener `PASS` |
+| Crear o validar consume minutos por tarea | Usar `Create -CreationMode Xml` y el snapshot XML predeterminado; no reconstruir un bucle de getters COM |
+| Tabla más larga que la pantalla | `Export-ProjectImage.ps1`; no iniciar una serie de capturas por scroll |
+| GIF/PNG no contiene la última fila | Revisar selección, memoria y rango; exportar bloques nativos si es necesario. `KeepRange` no garantiza memoria ilimitada |
+| Duraciones cero al importar XML | Incluir `RemainingDuration` y `ActualDuration`, además de `Duration`, en formato de horas/minutos/segundos; el writer del kit ya lo hace |
+| COM rechaza una ruta válida con argumento inválido | Convertir la ruta a `[string]` antes de pasarla a `InvokeMember`; un resultado enriquecido de PowerShell no siempre se convierte correctamente |
 | Diario de vista en `Opening` | El intento pudo abrir un archivo antes de fallar. Revisar proyectos abiertos y diario; no relanzar `Open` automáticamente |
 | Diario perteneciente a otro ProcessId | Project se reinició. No cerrar documentos basándose en una sesión anterior |
 | `user input was detected` | Releer `get_window_state` antes de continuar; el usuario puede haber cambiado foco, selección o tamaño de ventana |

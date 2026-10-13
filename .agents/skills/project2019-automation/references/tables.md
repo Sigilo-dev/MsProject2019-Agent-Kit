@@ -8,6 +8,8 @@ Para crear una tabla con tareas, duraciones y predecesoras, usa `Create`. El res
 
 ## Tabla para entregar o revisar
 
+Para una **imagen** completa de la tabla, usa `Export-ProjectImage.ps1 -Mode Table`. Para tabla más barras, `-Mode TableAndGantt`. Ambos permiten elegir columnas y UniqueID, y no necesitan scroll: [procedimiento nativo](native-images.md).
+
 Exporta desde el JSON de `Inspect` o desde el reporte `PASS` de la última operación:
 
 ```powershell
@@ -23,6 +25,6 @@ Esta tabla no es un formato completo de intercambio de Project: no contiene cale
 
 ## Tabla nativa personalizada: columnas, vistas y formato
 
-No está implementada por el exporter CSV. Si el pedido exige nuevas columnas, anchuras, tablas de costes/recursos o diseños nativos, trabaja en una copia y consulta los métodos oficiales de [TableEditEx](https://learn.microsoft.com/en-us/office/vba/api/project.application.tableeditex) y [TableApply](https://learn.microsoft.com/en-us/office/vba/api/project.application.tableapply). Usa nombres de tabla/columna obtenidos de la instalación, porque pueden estar traducidos.
+El exporter de imágenes ya crea una tabla temporal con columnas, anchos y títulos elegidos en su copia, exclusivamente para renderizar. No guarda ese diseño en la fuente. El exporter CSV tampoco modifica tablas nativas. Si se pide conservar un diseño en el MPP, tablas de costes/recursos u otras funciones, trabaja en una copia y consulta los métodos oficiales de [TableEditEx](https://learn.microsoft.com/en-us/office/vba/api/project.application.tableeditex) y [TableApply](https://learn.microsoft.com/en-us/office/vba/api/project.application.tableapply). Usa nombres de tabla/columna obtenidos de la instalación, porque pueden estar traducidos.
 
 Verifica la vista visualmente, guarda y reabre para comprobar que el formato solicitado se conservó. No edites `Global.MPT` ni presentes una imagen o Markdown como si fueran una tabla nativa guardada. Si amplías el código, añade prueba del comportamiento nuevo; no anuncies esa función como probada solo porque aparece en esta referencia.

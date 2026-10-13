@@ -2,7 +2,7 @@
 
 **Un procedimiento reproducible para que Codex cree y edite cronogramas, obtenga tablas y guarde capturas reales de Microsoft Project 2019 en Windows.**
 
-El paquete combina la automatización COM de Project, instrucciones para agentes y scripts verificados. Project calcula y guarda el archivo `.mpp`; Codex prepara los datos y comprueba el resultado. La captura de pantalla usa una vía nativa de Windows cuando el capturador del plugin Computer Use no funciona.
+El paquete combina XML en bloque, automatización COM e instrucciones para agentes. Project calcula y guarda el `.mpp`; Codex prepara los datos y comprueba el resultado. Para imágenes completas, Project exporta un GIF y el kit lo convierte a PNG conservando sus píxeles. No hay que recorrer la tabla tomando capturas por scroll.
 
 Repositorio: [Sigilo-dev/MsProject2019-Agent-Kit](https://github.com/Sigilo-dev/MsProject2019-Agent-Kit). El código no depende del nombre de la carpeta, de una unidad concreta ni del perfil de Windows del autor.
 
@@ -12,7 +12,7 @@ Repositorio: [Sigilo-dev/MsProject2019-Agent-Kit](https://github.com/Sigilo-dev/
 2. Abre Project con un documento en blanco o el proyecto que quieras inspeccionar. Deja una sola instancia de la aplicación y resuelve los diálogos pendientes.
 3. Pide a Codex:
 
-   > Lee AGENTS.md y usa la skill project2019-automation de esta carpeta. Comprueba el entorno. Crea un cronograma con estas tareas, duraciones y dependencias, verifica el archivo al reabrirlo y entrega una tabla y una captura PNG. Guarda los resultados en una carpeta nueva dentro de runs. No alteres mis archivos originales.
+   > Lee AGENTS.md y usa la skill project2019-automation. Crea este cronograma mediante XML en bloque, verifica el MPP al reabrirlo y exporta una imagen completa de tabla más Gantt con Export-ProjectImage.ps1. Revisa el PNG una vez. Guarda los resultados en una carpeta nueva dentro de runs y conserva mis originales.
 
 4. Proporciona las tareas, la fecha de inicio y las dependencias. Para un archivo existente, proporciona su ruta y los cambios concretos.
 
@@ -23,14 +23,15 @@ Para usar la skill explícitamente en un entorno que admita esa sintaxis: `$proj
 | Operación | Implementación y alcance |
 | --- | --- |
 | Leer tareas | Snapshot con identidad, duración, fechas, avance, modo, predecesoras, resumen, hito y restricciones; conversión de horas por día del proyecto |
-| Crear un cronograma | Tareas automáticas, duración en minutos y vínculos fin-comienzo sin demora |
+| Crear un cronograma | XML en bloque: tareas automáticas, minutos, avance y vínculos fin-comienzo; calendario explícito de lunes a viernes, 8 horas/día. COM por tarea disponible como alternativa |
 | Editar un `.mpp` | Copia nueva; modifica nombre, duración y avance por UniqueID |
 | Calcular fechas | Lo hace Microsoft Project usando el calendario y las opciones del archivo |
 | Hacer tablas | Crea filas en Project; exporta la tabla de tareas a CSV y Markdown desde datos verificados |
-| Guardar imágenes | PNG real de la ventana visible de Project, incluyendo su interfaz |
+| Imagen completa de tabla o tabla más Gantt | GIF nativo con filas seleccionadas, incluidas las fuera de pantalla, convertido a PNG con verificación de píxeles |
+| Capturar la interfaz | PNG de la ventana visible mediante GDI para pedidos que necesiten mostrar la aplicación |
 | Conservar el original | No lo sobrescribe; comprueba su hash al editar una copia |
-| Verificar | Reabre el resultado y compara los campos cubiertos, además de los valores solicitados |
-| Recursos, costes, líneas base, calendarios especiales, subproyectos o tablas nativas personalizadas | Requieren ampliar y validar el procedimiento; no se anuncian como cubiertos por los scripts actuales |
+| Verificar | Reabre el resultado y lee los campos cubiertos mediante XML en bloque; compara los valores solicitados y datos persistidos |
+| Recursos, costes, líneas base, calendarios especiales, subproyectos o diseños de tabla guardados en el MPP | Requieren ampliar y validar el procedimiento; la tabla temporal del exporter solo prepara la imagen |
 
 No hay una garantía universal de «100 % a la primera»: influyen la edición instalada, los calendarios, la sesión gráfica, los permisos y el contenido del archivo. El propósito es evitar redescubrir los problemas ya resueltos y detenerse con evidencia cuando aparece uno nuevo. [VALIDATION.md](VALIDATION.md) especifica qué se comprobó.
 
@@ -44,7 +45,7 @@ No hay una garantía universal de «100 % a la primera»: influyen la edición i
 - Para capturas: escritorio desbloqueado, Project visible y en primer plano. Computer Use es útil para identificar y activar la ventana; también puede hacerlo el usuario.
 - Las herramientas y políticas del entorno deben permitir las operaciones. El paquete no concede acceso adicional ni evita restricciones.
 
-No necesita API key, macros VBA, complementos de Office ni paquetes de Python para operar Project. Python solo se utilizó durante la preparación para validar el formato de la skill. Los scripts no desactivan políticas de ejecución o seguridad; un bloqueo de la máquina debe resolverse mediante el procedimiento aprobado para ese entorno.
+No necesita API key, macros VBA, complementos de Office ni paquetes de Python para operar Project o convertir GIF a PNG: usa .NET incluido en Windows. Python solo se utilizó durante la preparación para validar el formato de la skill. Los scripts no desactivan políticas de ejecución o seguridad; un bloqueo de la máquina debe resolverse mediante el procedimiento aprobado para ese entorno.
 
 ## Por qué hay README, AGENTS y skill
 
@@ -74,7 +75,7 @@ powershell.exe -NoProfile -NonInteractive -STA -File "$scripts\Test-ProjectEnvir
 if ($LASTEXITCODE -ne 0) { throw 'Corregir el entorno antes de continuar.' }
 
 powershell.exe -NoProfile -NonInteractive -STA -File "$scripts\Project-Codex.ps1" `
-  -Action Create -PlanPath "$skillDir\examples\plan.json" `
+  -Action Create -CreationMode Xml -PlanPath "$skillDir\examples\plan.json" `
   -OutputPath "$runDir\base.mpp" -ReportPath "$runDir\create.json"
 if ($LASTEXITCODE -ne 0) { throw 'Revisar el error; no repetir una mutacion a ciegas.' }
 
@@ -89,7 +90,7 @@ powershell.exe -NoProfile -NonInteractive -STA -File "$scripts\Export-ProjectTab
 if ($LASTEXITCODE -ne 0) { throw 'Revisar el error de exportacion.' }
 ```
 
-La fecha del ejemplo es fija para reproducibilidad: **12 de octubre de 2026**, no «hoy». Modifícala en tu JSON cuando corresponda. La duración de un día no debe suponerse siempre igual a 480 minutos: depende de la jornada y el calendario que uses.
+La fecha del ejemplo es fija: **12 de octubre de 2026**, no «hoy». La creación XML usa un calendario nuevo de lunes a viernes, 08:00–12:00 y 13:00–17:00, sin feriados, y deja el XML junto al MPP para revisión. Para otra jornada, adapta y valida el calendario explícitamente. `-CreationMode Com` conserva la alternativa anterior que crea tareas una por una usando los valores predeterminados de Project. En archivos existentes, lee la jornada del archivo; no supongas siempre 480 minutos por día.
 
 Para inspeccionar sin editar:
 
@@ -110,7 +111,25 @@ Si sabes qué documento debe estar activo, añade `-ExpectedActiveProjectPath` c
 
 Para calendarios compartidos, subproyectos o vínculos externos, revisa [workflow.md](.agents/skills/project2019-automation/references/workflow.md) antes de operar. Copiar un `.mpp` no independiza por sí mismo sus dependencias externas.
 
-## Capturas después de los cambios
+## Imágenes completas sin scroll
+
+Después de verificar el MPP, exporta una tabla o una tabla más Gantt con un comando:
+
+```powershell
+powershell.exe -NoProfile -NonInteractive -STA -File "$scripts\Export-ProjectImage.ps1" `
+  -ProjectPath "$runDir\edited.mpp" -OutputDirectory "$runDir\image" -Mode TableAndGantt
+if ($LASTEXITCODE -ne 0) { throw 'Revisar el error de exportacion.' }
+```
+
+Usa `-Mode Table` para tabla sola. Produce GIF, PNG y reporte; abre su propia copia, selecciona todas las tareas, exporta las filas fuera de pantalla y restaura el documento anterior. No hace falta abrir otra vista ni activar la ventana por Computer Use.
+
+El PNG conserva dimensiones y píxeles del GIF: se verifica por hash, sin escalado. GIF puede reducir colores en la exportación inicial; PNG no recupera ese detalle. La IA debe abrir la imagen y comprobar columnas, primera y última tarea y legibilidad. [native-images.md](.agents/skills/project2019-automation/references/native-images.md) contiene opciones para columnas, títulos, anchos, UniqueID y fechas.
+
+En una prueba local de **120 tareas**, la creación XML con guardado y reapertura tardó **9,35 s**; la exportación y conversión de tabla completa, **8,04 s**; tabla más Gantt, **9,05 s**. Son mediciones de ese caso, no un compromiso de tiempo para otros archivos. Consulta [VALIDATION.md](VALIDATION.md).
+
+Para peticiones posteriores, reutiliza el MPP y el reporte vigentes. No reconstruyas el cronograma ni repitas `Inspect` si los datos no cambiaron. Haz una sola ronda de revisión visual por resultado y corrige únicamente problemas observados.
+
+## Capturas de la interfaz cuando se soliciten
 
 El flujo completo está en [captures.md](.agents/skills/project2019-automation/references/captures.md). Incluye los comandos para abrir el resultado, identificar y activar su ventana, guardar el PNG, revisarlo y volver al documento anterior.
 
@@ -154,7 +173,7 @@ No ejecutes `Quit`, `FileCloseAll`, `CalculateAll`, `/regserver`, reparaciones, 
 - Archivo `.mpp` nuevo y ruta de la fuente conservada, si corresponde.
 - Reporte JSON con la verificación realizada.
 - Tabla CSV/Markdown si se solicitó.
-- Captura PNG revisada si se solicitó; indicar cualquier limitación visual.
+- PNG nativo revisado de tabla/Gantt, o captura de interfaz si eso se solicitó; indicar cualquier limitación visual.
 - Resumen de cambios y de aquello que quedó pendiente, sin afirmar que todos los campos de Project fueron certificados.
 
 ## Distribución

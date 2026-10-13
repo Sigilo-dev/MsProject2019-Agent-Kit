@@ -5,12 +5,14 @@ param(
     [string]$OutputPath,
     [string]$SourcePath,
     [string]$ReportPath,
-    [string]$ExpectedActiveProjectPath
+    [string]$ExpectedActiveProjectPath,
+    [ValidateSet('Xml','Com')][string]$CreationMode = 'Xml'
 )
 # Run with Windows PowerShell 5.1 -STA. Uses Project COM, not screen automation.
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 . "$PSScriptRoot\ProjectCom.ps1"
+. "$PSScriptRoot\ProjectXml.ps1"
 if ($PSVersionTable.PSEdition -ne 'Desktop' -or [Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
     throw 'Use powershell.exe -NoProfile -NonInteractive -STA -File Project-Codex.ps1 ...'
 }
@@ -153,7 +155,22 @@ try {
         return
     }
     $projects = Get-ProjectProperty $app 'Projects'
-    if ($Action -eq 'Create') {
+    if ($Action -eq 'Create' -and $CreationMode -eq 'Xml') {
+        $xmlPath = [IO.Path]::ChangeExtension($OutputPath,'.xml')
+        Write-ProjectPlanXml $plan $xmlPath
+        $m = [Type]::Missing
+        # Merge=0 imports a new project; never merges into the user's active file.
+        if (-not (Invoke-ProjectMethod $app 'FileOpenEx' @($xmlPath,$false,0,$m,$m,$m,$true,$m,$m,'MSProject.XML',$m,$m,$m,$m,$m,$m,$true))) { throw 'XML import failed.' }
+        $test = Get-ProjectProperty $app 'ActiveProject'
+        if ((Get-ProjectProperty $test 'FullName') -eq (Get-ProjectProperty $original 'FullName')) { throw 'XML did not open as a separate project.' }
+        [void](Invoke-ProjectMethod $app 'CalculateProject')
+        $tasks = Get-ProjectProperty $test 'Tasks'
+        $taskMap = @{}; $xmlUid = 0
+        foreach ($spec in $plan.tasks) {
+            $xmlUid++
+            $taskMap[[string]$spec.key] = $xmlUid
+        }
+    } elseif ($Action -eq 'Create') {
         $test = Invoke-ProjectMethod $projects 'Add' @($false,[Type]::Missing,$false)
         if ($plan.PSObject.Properties['startDate']) { Set-ProjectProperty $test 'ProjectStart' ([datetime]::Parse($plan.startDate,[Globalization.CultureInfo]::InvariantCulture)) }
         $tasks = Get-ProjectProperty $test 'Tasks'
@@ -196,13 +213,15 @@ try {
     if ($Action -eq 'Create') {
         if ($expected.TaskCount -ne @($plan.tasks).Count) { throw 'Unexpected task count.' }
         foreach ($spec in $plan.tasks) {
-            $uid = [int](Get-ProjectProperty $taskMap[[string]$spec.key] 'UniqueID')
+            $uid = if ($CreationMode -eq 'Xml') {[int]$taskMap[[string]$spec.key]} else {[int](Get-ProjectProperty $taskMap[[string]$spec.key] 'UniqueID')}
             $row = @($expected.Tasks | Where-Object {$_.UniqueID -eq $uid})
             if ($row.Count -ne 1 -or $row[0].Manual) { throw 'Task was not created with automatic scheduling.' }
             Assert-RequestedFields $spec $row[0]
             $desiredPredecessors = @()
             if ($spec.PSObject.Properties['predecessorKeys']) {
-                foreach ($key in $spec.predecessorKeys) { $desiredPredecessors += [int](Get-ProjectProperty $taskMap[[string]$key] 'UniqueID') }
+                foreach ($key in $spec.predecessorKeys) {
+                    $desiredPredecessors += $(if ($CreationMode -eq 'Xml') {[int]$taskMap[[string]$key]} else {[int](Get-ProjectProperty $taskMap[[string]$key] 'UniqueID')})
+                }
             }
             if ((@($desiredPredecessors | Sort-Object) -join ',') -ne (@($row[0].PredecessorUniqueIDs) -join ',')) { throw 'Requested predecessors were not applied.' }
         }
@@ -225,6 +244,7 @@ try {
     if ($sourceHash -and (Get-FileHash -LiteralPath $SourcePath -Algorithm SHA256).Hash -ne $sourceHash) { throw 'Source file hash changed.' }
     $report = [pscustomobject]@{
         Result='PASS';Action=$Action;Version=$version
+        CreationMode=$(if($Action -eq 'Create'){$CreationMode}else{$null})
         VerifiedUtc=[datetime]::UtcNow.ToString('o');Output=$OutputPath
         ReopenedVerified=$true;RequestedValuesVerified=$true;OriginalSnapshotUnchanged=$true
         SourceFileUnchanged=$(if($sourceHash){$true}else{$null})

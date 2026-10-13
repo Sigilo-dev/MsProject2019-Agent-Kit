@@ -11,7 +11,37 @@ Fecha: **13 de octubre de 2026**. Pruebas locales sobre archivos sintéticos des
 
 El usuario identificó su instalación como Project 2019. Esto es una validación en ese entorno, no una matriz de compatibilidad de todas las ediciones o equipos.
 
-## Resultados
+## Exportación nativa y flujo rápido (ampliación)
+
+Se probó `Test-NativeImages.ps1` con **120 tareas**: diez cadenas fin-comienzo, un hito final, progreso del 25 %, texto Unicode y caracteres `&`/`<` escapados en XML. Project importó el plan, calculó, guardó y reabrió el MPP; los valores pedidos y el snapshot persistido coincidieron. Se inspeccionaron visualmente las tres imágenes siguientes, incluida la última fila.
+
+| Operación | Dimensiones / alcance | Tiempo local |
+| --- | --- | --- |
+| Crear por XML, guardar y verificar al reabrir | 120 tareas | 9,35 s |
+| Tabla completa → GIF → PNG | 747 × 2180 px; tareas 1–120 | 8,04 s |
+| Tabla más Gantt → GIF → PNG | 1492 × 3339 px; tareas 1–120 | 9,05 s |
+| Selección no contigua, columnas y título elegidos | 540 × 74 px; UniqueID 1, 60 y 120 | 11,04 s |
+
+En cada exportación se verificaron los píxeles GIF/PNG, el hash intacto de la fuente y la restauración del documento previo. No hubo scroll ni capturas de pantalla. El test completo, incluida la creación y las tres exportaciones, tardó **38,15 s**, sin contar investigación, desarrollo ni revisión humana/visual. Son resultados de ese equipo y fixture; no una promesa para archivos reales arbitrarios.
+
+La lectura por propiedades COM se midió alrededor de 350–400 ms por propiedad de tarea en una prueba puntual. Una exportación nativa del documento a XML tardó unos 272 ms y conservó nombre y estado `Saved`. Por eso el snapshot ahora usa exportación XML en bloque. No elimina la reapertura ni las comprobaciones.
+
+También pasó la edición de una copia del archivo de 120 tareas con reapertura y conservación del hash fuente, y volvieron a pasar los nueve casos de rechazo de entradas. Las imágenes de datos no contienen la barra de cuenta de Office. Permanecen en `runs/` junto con los demás resultados locales.
+
+La alternativa `Create -CreationMode Com` y la exportación CSV/Markdown siguieron funcionando con el snapshot en bloque. `Test-ImageConversion.ps1` comprobó preservación de píxeles, rechazo de GIF con dos frames (incluso sin demora), formato inválido y protección contra sobrescritura. Los trece scripts pasaron el análisis de sintaxis; el validador de skill también pasó.
+
+Para repetir, con Project abierto y un documento activo:
+
+```powershell
+powershell.exe -NoProfile -NonInteractive -STA -File "$scripts\Test-NativeImages.ps1" `
+  -RunDirectory "$runDir\native-images-test"
+powershell.exe -NoProfile -NonInteractive -STA -File "$scripts\Test-ImageConversion.ps1" `
+  -RunDirectory "$runDir\conversion-test"
+```
+
+Después abre los PNG: el test no sustituye la revisión de legibilidad. La exportación de una selección verifica sus UniqueID; `KeepRange` conserva el rango, pero Project puede recortar si agota memoria. No se certifican tamaños ilimitados.
+
+## Resultados iniciales (antes de la ampliación)
 
 | Prueba | Resultado observado |
 | --- | --- |
@@ -57,6 +87,6 @@ if ($LASTEXITCODE -ne 0) { throw 'Revisar la prueba fallida.' }
 
 ## Límites de la evidencia
 
-No se certifican otros equipos, PowerShell 7, escritorio bloqueado, sesiones remotas, proyectos grandes, asignaciones y costes, líneas base, calendarios complejos, subproyectos, recursos compartidos, macros, archivos empresariales ni tablas/vistas nativas personalizadas. Leer el estado de un hito o una restricción no equivale a haber validado su edición en todos los casos.
+No se certifican otros equipos, PowerShell 7, escritorio bloqueado, sesiones remotas, tamaños arbitrarios por encima del fixture de 120 tareas, asignaciones y costes, líneas base, calendarios complejos, subproyectos, recursos compartidos, macros ni archivos empresariales. Se probó una tabla temporal de columnas elegidas para exportar imágenes; no se certifica guardar cualquier diseño de vista en un MPP. Leer el estado de un hito o una restricción no equivale a haber validado su edición en todos los casos.
 
 Los reportes, archivos MPP y capturas locales se conservan bajo `runs/` para inspección del propietario y están excluidos por `.gitignore`. El ZIP para compartir incluye documentación, scripts y JSON sintéticos; excluye esas evidencias y cualquier archivo de Microsoft Project.

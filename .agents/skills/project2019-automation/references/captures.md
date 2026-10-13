@@ -1,5 +1,7 @@
 # Capturas reales de Project
 
+**Si se pide una imagen de la tabla o del Gantt, empieza por [native-images.md](native-images.md).** Exporta filas fuera de pantalla en una sola imagen. Este documento se reserva para capturas que deben mostrar la interfaz, un diálogo o un estado visible de Project; no es el método principal para tablas largas.
+
 ## Qué está probado
 
 COM creó/modificó archivos y una captura nativa de Windows guardó la ventana visible en PNG. En la sesión original, Computer Use enumeraba ventanas, las activaba y leía controles, pero no capturaba frames. El clic por índice también falló por falta de geometría. La captura GDI resolvió la evidencia visual sin reparar ni reinstalar Project.
